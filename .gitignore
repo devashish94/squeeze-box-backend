@@ -18,8 +18,10 @@
 # Go workspace file
 go.work
 
-output-imgages/
+output-images/
 uploads/
 
-output-imgages/*
+output-images/*
 uploads/*
+
+hello.text
