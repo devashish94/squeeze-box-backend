@@ -9,10 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devashish94/squeeze-box-backend/util"
 	"github.com/google/uuid"
 )
-
-// "github.com/devashish94/pixel-presser/util"
 
 type StandardResponse struct {
 	Success bool   `json:"success"`
@@ -20,16 +19,32 @@ type StandardResponse struct {
 }
 
 func main() {
-	http.HandleFunc("POST /api/upload-images", handleImageUpload)
-	http.HandleFunc("/", handleRoot)
+	router := http.NewServeMux()
 
-	err := http.ListenAndServe(":6900", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	router.HandleFunc("POST /api/upload-images", handleImageUpload)
+	router.HandleFunc("/", handleRoot)
+
+	corsEnabledRouter := CorsMiddleware(router)
+	log.Fatal(http.ListenAndServe(":4000", corsEnabledRouter))
+}
+
+func CorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("this root is hit")
 	w.Header().Set("Content-Type", "application/json")
 	data, _ := json.Marshal(StandardResponse{Success: true, Message: "This is the default response"})
 	_, err := w.Write(data)
@@ -39,24 +54,43 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleImageUpload(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got hit")
 	clientID := uuid.New().String()
 
+	fmt.Println(r.Header.Get("Content-Type"))
+
+	w.Header().Set("Content-Type", "application/json")
+
+	file, _, err := r.FormFile("images")
+	if err != nil {
+		data, _ := json.Marshal(StandardResponse{Success: false, Message: "no formfile images"})
+		w.Write(data)
+		return
+	}
+	defer file.Close()
+
 	multipartData := r.MultipartForm
+	if multipartData == nil {
+		data, _ := json.Marshal(StandardResponse{Success: false, Message: "images not present in the body"})
+		w.Write(data)
+		return
+	}
+
 	files := multipartData.File["images"]
 
 	for _, fileHeader := range files {
 		file, err := fileHeader.Open()
 		if err != nil {
-			data, _ := json.Marshal(StandardResponse{Success: false, Message: "could not read multipart form"})
+			data, _ := json.Marshal(StandardResponse{Success: false, Message: "could not open fileHeader for " + fileHeader.Filename})
 			w.Write(data)
 			return
 		}
 		defer file.Close()
 
-		uniqueDirectoryName := "./uploads" + clientID
+		uniqueDirectoryName := "./uploads/" + clientID
 		os.MkdirAll(uniqueDirectoryName, os.ModePerm)
 
-		filePath := filepath.Join("./uploads", fileHeader.Filename)
+		filePath := filepath.Join("./uploads/"+clientID, fileHeader.Filename)
 		newFile, err := os.Create(filePath)
 		if err != nil {
 			data, _ := json.Marshal(StandardResponse{Success: false, Message: "could not create file" + filePath})
@@ -69,6 +103,8 @@ func handleImageUpload(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("done uploading", filePath)
 	}
+
+	util.CompressImage(clientID, 500)
 
 	data, _ := json.Marshal(StandardResponse{Success: true, Message: clientID})
 	w.Write(data)

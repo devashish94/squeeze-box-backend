@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"log"
 	"math"
 	"os"
 	"os/exec"
@@ -17,21 +18,30 @@ import (
 	"github.com/chai2010/webp"
 )
 
-func CompressImage(dir *os.File, limit int) {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+func CompressImage(clientID string, limit int) {
+	dir, err := os.Open("./uploads/" + clientID)
+	if err != nil {
+		log.Fatal("could not read directory" + clientID)
+		return
+	}
+	defer dir.Close()
 
 	filenames, err := dir.Readdirnames(-1)
 	HandleError(err)
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	// limit := int64(300)
 	targetSize := int64(limit * 1000)
+	fmt.Println(limit, targetSize)
+
 	wg := sync.WaitGroup{}
 
 	wg.Add(len(filenames))
 	parallel := time.Now()
 	for _, filename := range filenames {
 		go func(filename string) {
-			ProcessImage(filename, targetSize)
+			ProcessImage(filename, clientID, targetSize)
 			defer wg.Done()
 		}(filename)
 	}
@@ -39,10 +49,14 @@ func CompressImage(dir *os.File, limit int) {
 	fmt.Println("Time taken (parallel):", time.Since(parallel))
 }
 
-func ProcessImage(filename string, targetSize int64) {
+func ProcessImage(filename string, clientID string, targetSize int64) {
 	filenameWithoutExtension := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
-	outputImagePath := "./output-images/" + filenameWithoutExtension + ".jpeg"
-	inputImagePath := "./input-images/" + filename
+
+	uniqueDirectoryName := "./output-images/" + clientID
+	os.MkdirAll(uniqueDirectoryName, os.ModePerm)
+
+	outputImagePath := "./output-images/" + clientID + "/" + filename
+	inputImagePath := "./uploads/" + clientID + "/" + filename
 
 	file, err := os.Open(inputImagePath)
 	HandleError(err)
