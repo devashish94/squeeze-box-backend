@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/devashish94/squeeze-box-backend/util"
 	"github.com/google/uuid"
@@ -77,6 +78,9 @@ func handleImageUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	files := multipartData.File["images"]
+	targetSize, _ := strconv.ParseFloat(r.FormValue("targetSize"), 64)
+
+	fmt.Println("main.go size ->", targetSize)
 
 	for _, fileHeader := range files {
 		file, err := fileHeader.Open()
@@ -104,7 +108,7 @@ func handleImageUpload(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("done uploading", filePath)
 	}
 
-	util.CompressImage(clientID, 500)
+	util.CompressImage(clientID, targetSize)
 
 	data, _ := json.Marshal(StandardResponse{Success: true, Message: clientID})
 	w.Write(data)

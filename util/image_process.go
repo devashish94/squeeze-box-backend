@@ -18,7 +18,7 @@ import (
 	"github.com/chai2010/webp"
 )
 
-func CompressImage(clientID string, limit int) {
+func CompressImage(clientID string, limit float64) {
 	dir, err := os.Open("./uploads/" + clientID)
 	if err != nil {
 		log.Fatal("could not read directory" + clientID)
@@ -33,7 +33,7 @@ func CompressImage(clientID string, limit int) {
 
 	// limit := int64(300)
 	targetSize := int64(limit * 1000)
-	fmt.Println(limit, targetSize)
+	fmt.Println("compress ->", limit, targetSize)
 
 	wg := sync.WaitGroup{}
 
