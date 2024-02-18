@@ -35,7 +35,7 @@ func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -128,17 +128,21 @@ func handleImageDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientID := requestBody["clientId"]
+	clientID := requestBody["clientID"]
 	imagesDirectory := filepath.Join("./output-images", clientID)
 	tempZipLocation := filepath.Join("./output-images", clientID, "temp.zip")
 
-	cmd := exec.Command("zip", "-r", tempZipLocation, imagesDirectory)
+	cmd := exec.Command("zip", "-jr", tempZipLocation, imagesDirectory)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	if err := cmd.Run(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
 		data, _ := json.Marshal(StandardResponse{Success: false, Message: "could not read the client id"})
 		w.Write(data)
-		return
+		panic(err)
 	}
 
 	zipFile, err := os.Open(tempZipLocation)
@@ -147,7 +151,7 @@ func handleImageDownload(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		data, _ := json.Marshal(StandardResponse{Success: false, Message: "could not open the temp.zip file"})
 		w.Write(data)
-		return
+		panic(err)
 	}
 	defer zipFile.Close()
 
