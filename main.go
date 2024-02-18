@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 
@@ -23,6 +24,7 @@ func main() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("POST /api/upload-images", handleImageUpload)
+	router.HandleFunc("POST /api/download", handleImageDownload)
 	router.HandleFunc("/", handleRoot)
 
 	corsEnabledRouter := CorsMiddleware(router)
@@ -112,4 +114,48 @@ func handleImageUpload(w http.ResponseWriter, r *http.Request) {
 
 	data, _ := json.Marshal(StandardResponse{Success: true, Message: clientID})
 	w.Write(data)
+}
+
+func handleImageDownload(w http.ResponseWriter, r *http.Request) {
+	var requestBody map[string]string
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		data, _ := json.Marshal(StandardResponse{Success: false, Message: "could not read the client id"})
+		w.Write(data)
+		return
+	}
+
+	clientID := requestBody["clientId"]
+	imagesDirectory := filepath.Join("./output-images", clientID)
+	tempZipLocation := filepath.Join("./output-images", clientID, "temp.zip")
+
+	cmd := exec.Command("zip", "-r", tempZipLocation, imagesDirectory)
+	if err := cmd.Run(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		data, _ := json.Marshal(StandardResponse{Success: false, Message: "could not read the client id"})
+		w.Write(data)
+		return
+	}
+
+	zipFile, err := os.Open(tempZipLocation)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		data, _ := json.Marshal(StandardResponse{Success: false, Message: "could not open the temp.zip file"})
+		w.Write(data)
+		return
+	}
+	defer zipFile.Close()
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", "attachment; filename=temp.zip")
+
+	_, err = io.Copy(w, zipFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
