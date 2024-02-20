@@ -28,7 +28,7 @@ func main() {
 	router.HandleFunc("/", handleRoot)
 
 	corsEnabledRouter := CorsMiddleware(router)
-	log.Fatal(http.ListenAndServe(":4000", corsEnabledRouter))
+	log.Fatal(http.ListenAndServe("0.0.0.0:4000", corsEnabledRouter))
 }
 
 func CorsMiddleware(next http.Handler) http.Handler {
