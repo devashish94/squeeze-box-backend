@@ -27,8 +27,10 @@ func main() {
 	router.HandleFunc("POST /api/download", handleImageDownload)
 	router.HandleFunc("/", handleRoot)
 
-	corsEnabledRouter := CorsMiddleware(router)
-	log.Fatal(http.ListenAndServe("0.0.0.0:4000", corsEnabledRouter))
+	// corsEnabledRouter := CorsMiddleware(router)
+	fmt.Println("Starting the server...")
+	// http.ListenAndServe(":4000", corsEnabledRouter)
+	http.ListenAndServe(":4000", router)
 }
 
 func CorsMiddleware(next http.Handler) http.Handler {
