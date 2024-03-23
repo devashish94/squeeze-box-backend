@@ -23,14 +23,25 @@ type StandardResponse struct {
 func main() {
 	router := http.NewServeMux()
 
-	router.HandleFunc("POST /api/upload-images", handleImageUpload)
-	router.HandleFunc("POST /api/download", handleImageDownload)
+	router.HandleFunc("POST /squeeze-box/api/upload-images", handleImageUpload)
+	router.HandleFunc("POST /squeeze-box/api/download", handleImageDownload)
+	router.HandleFunc("/squeeze-box/api", handleRootUrl)
 	router.HandleFunc("/", handleRoot)
 
 	// corsEnabledRouter := CorsMiddleware(router)
 	fmt.Println("Starting the server...")
 	// http.ListenAndServe(":4000", corsEnabledRouter)
 	http.ListenAndServe(":4000", router)
+}
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("this root is hit")
+	w.Header().Set("Content-Type", "application/json")
+	data, _ := json.Marshal(StandardResponse{Success: true, Message: "Nothing to see here."})
+	_, err := w.Write(data)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func CorsMiddleware(next http.Handler) http.Handler {
@@ -48,7 +59,7 @@ func CorsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func handleRoot(w http.ResponseWriter, r *http.Request) {
+func handleRootUrl(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("this root is hit")
 	w.Header().Set("Content-Type", "application/json")
 	data, _ := json.Marshal(StandardResponse{Success: true, Message: "This is the default response"})
