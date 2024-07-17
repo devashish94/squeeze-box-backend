@@ -33,16 +33,6 @@ func main() {
 	http.ListenAndServe(":4000", router)
 }
 
-// func handleRoot(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Println("this root is hit")
-// 	w.Header().Set("Content-Type", "application/json")
-// 	data, _ := json.Marshal(StandardResponse{Success: true, Message: "Nothing to see here."})
-// 	_, err := w.Write(data)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// }
-
 func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
