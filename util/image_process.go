@@ -14,8 +14,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/chai2010/webp"
 )
 
 func CompressImage(clientID string, limit float64) {
@@ -53,7 +51,11 @@ func ProcessImage(filename string, clientID string, targetSize int64) {
 	filenameWithoutExtension := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
 
 	uniqueDirectoryName := "./output-images/" + clientID
-	os.MkdirAll(uniqueDirectoryName, os.ModePerm)
+	err := os.MkdirAll(uniqueDirectoryName, os.ModePerm)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
 
 	outputImagePath := "./output-images/" + clientID + "/" + filename
 	inputImagePath := "./uploads/" + clientID + "/" + filename
@@ -74,45 +76,60 @@ func ProcessImage(filename string, clientID string, targetSize int64) {
 	img, err := DecodeImage(file, filename)
 	HandleError(err)
 
-	currentSize := int64(math.MaxInt64)
-	qualityFactor := 100
-
-	left := 0
-	right := qualityFactor
-	var qualityFactorAnswer int
-
-	for left <= right {
-		mid := left + (right-left)/2
-
-		outputFile, err := os.Create(outputImagePath)
-		HandleError(err)
-		defer outputFile.Close()
-
-		err = jpeg.Encode(outputFile, img, &jpeg.Options{Quality: mid})
-		HandleError(err)
-
-		info, err := os.Stat(outputImagePath)
-		HandleError(err)
-		currentSize = info.Size()
-
-		if currentSize <= targetSize {
-			qualityFactorAnswer = mid
-			left = mid + 1
-		} else {
-			right = mid - 1
-		}
+	finalQualityFactor, err := reduceImageSizeToTargetSize(img, outputImagePath, targetSize)
+	if err != nil {
+		fmt.Println("error", err)
 	}
 
 	outputFile, err := os.Create(outputImagePath)
 	HandleError(err)
 	defer outputFile.Close()
 
-	err = jpeg.Encode(outputFile, img, &jpeg.Options{Quality: qualityFactorAnswer})
+	err = jpeg.Encode(outputFile, img, &jpeg.Options{Quality: finalQualityFactor})
 	HandleError(err)
 
 	info, err := os.Stat(outputImagePath)
 	HandleError(err)
 	fmt.Println("[", filenameWithoutExtension+".jpeg", "] Size:", float64(info.Size())/float64(1000), "KB")
+}
+
+func reduceImageSizeToTargetSize(image image.Image, outputImagePath string, targetSize int64) (int, error) {
+	currentSize := int64(math.MaxInt64)
+	qualityFactor := 100
+
+	left := 0
+	right := qualityFactor
+	mid := 0
+
+	for left <= right {
+		mid = left + (right-left)/2
+
+		outputFile, err := os.Create(outputImagePath)
+		HandleError(err)
+
+		err = jpeg.Encode(outputFile, image, &jpeg.Options{Quality: mid})
+		if err != nil {
+			return 0, err
+		}
+
+		err = outputFile.Close()
+		if err != nil {
+			return 0, err
+		}
+
+		info, err := os.Stat(outputImagePath)
+		if err != nil {
+			return 0, err
+		}
+		currentSize = info.Size()
+
+		if currentSize <= targetSize {
+			left = mid + 1
+		} else {
+			right = mid - 1
+		}
+	}
+	return mid, nil
 }
 
 func DecodeImage(file *os.File, filename string) (image.Image, error) {
@@ -123,8 +140,8 @@ func DecodeImage(file *os.File, filename string) (image.Image, error) {
 		return jpeg.Decode(file)
 	case ".png":
 		return png.Decode(file)
-	case ".webp":
-		return webp.Decode(file)
+	//case ".webp":
+	//	return webp.Decode(file)
 	default:
 		return nil, fmt.Errorf("file Type not supported, add it in the decodeImage() %s", ext)
 	}
@@ -148,3 +165,33 @@ func DecodeImage(file *os.File, filename string) (image.Image, error) {
 // defer dir.Close()
 
 // util.CompressImage(dir, 200)
+
+//currentSize := int64(math.MaxInt64)
+//qualityFactor := 100
+//
+//left := 0
+//right := qualityFactor
+
+//var qualityFactorAnswer int
+//
+//for left <= right {
+//	mid := left + (right-left)/2
+//
+//	outputFile, err := os.Create(outputImagePath)
+//	HandleError(err)
+//	defer outputFile.Close()
+//
+//	err = jpeg.Encode(outputFile, img, &jpeg.Options{Quality: mid})
+//	HandleError(err)
+//
+//	info, err := os.Stat(outputImagePath)
+//	HandleError(err)
+//	currentSize = info.Size()
+//
+//	if currentSize <= targetSize {
+//		qualityFactorAnswer = mid
+//		left = mid + 1
+//	} else {
+//		right = mid - 1
+//	}
+//}
