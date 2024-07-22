@@ -29,7 +29,6 @@ func main() {
 
 	// corsEnabledRouter := CorsMiddleware(router)
 	fmt.Println("Starting the server...")
-	// http.ListenAndServe(":4000", corsEnabledRouter)
 	http.ListenAndServe(":4000", router)
 }
 
