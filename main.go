@@ -22,14 +22,14 @@ type StandardResponse struct {
 
 func main() {
 	router := http.NewServeMux()
+	port := ":4000"
 
 	router.HandleFunc("POST /api/upload-images", handleImageUpload)
 	router.HandleFunc("POST /api/download", handleImageDownload)
 	router.HandleFunc("/api", handleRootUrl)
 
-	// corsEnabledRouter := CorsMiddleware(router)
-	fmt.Println("Starting the server...")
-	http.ListenAndServe(":4000", router)
+	fmt.Println("Server starting at port:", port, "...")
+	http.ListenAndServe(port, router)
 }
 
 func CorsMiddleware(next http.Handler) http.Handler {
