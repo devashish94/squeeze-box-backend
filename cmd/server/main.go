@@ -1,19 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"github.com/devashish94/squeeze-box-backend/internal/api/rest"
+	imageRest "github.com/devashish94/squeeze-box-backend/internal/image/api/rest"
+	"log"
 	"net/http"
 	"os"
 )
 
 func run() error {
 	addr := ":4000"
-	apiRouter := rest.NewRouter()
+	imageRouter := imageRest.NewRouter()
 
-	fmt.Println("Server has started at PORT:", addr)
+	router := http.NewServeMux()
+	router.Handle("/api/image/", http.StripPrefix("/api/image", imageRouter))
 
-	err := http.ListenAndServe(addr, apiRouter)
+	log.Println("Server has started at PORT:", addr)
+
+	err := http.ListenAndServe(addr, router)
 	if err != nil {
 		return err
 	}

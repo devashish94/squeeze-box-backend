@@ -24,4 +24,5 @@ uploads/
 output-images/*
 uploads/*
 
-hello.text
+bin/*
+output-images/*

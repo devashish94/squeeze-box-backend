@@ -22,9 +22,10 @@ func (r *Response) Status(status int) *Response {
 	r.status = status
 	return r
 }
+
 func Ok(r *Response) {
 	r.writer.WriteHeader(r.status) // need to validate that a correct status is set
-	json.NewEncoder(r.writer).Encode(r.body)
+	_ = json.NewEncoder(r.writer).Encode(r.body)
 }
 
 func (r *Response) Json(body interface{}) *Response {
