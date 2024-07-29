@@ -19,11 +19,5 @@
 # Go workspace file
 go.work
 
+bin/
 output-images/
-uploads/
-
-output-images/*
-uploads/*
-
-bin/*
-output-images/*
