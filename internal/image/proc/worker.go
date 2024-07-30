@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"runtime"
 	"sync"
+	"time"
 )
 
 type Job struct {
@@ -13,11 +14,12 @@ type Job struct {
 	targetSize int64
 }
 
-func worker(jobChannel <-chan *Job, errChan chan error, wg *sync.WaitGroup) {
+func worker(workerId int, jobChannel <-chan *Job, errChan chan error, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for job := range jobChannel {
+		start := time.Now()
 		err := compressImage(job.fileHeader, job.clientID, job.targetSize)
-		log.Println(job.clientID, job.fileHeader.Filename)
+		log.Println("workerId:", workerId, "timeTaken:", time.Since(start), "clientID:", job.clientID, "fileName:", job.fileHeader.Filename)
 		if err != nil {
 			errChan <- err
 		}
@@ -28,7 +30,7 @@ func startWorkers(jobChan chan *Job, errChan chan error, waitGroup *sync.WaitGro
 	numOfWorkers := runtime.NumCPU()
 	for core := 0; core < numOfWorkers; core++ {
 		waitGroup.Add(1)
-		go worker(jobChan, errChan, waitGroup)
+		go worker(core, jobChan, errChan, waitGroup)
 	}
 }
 
