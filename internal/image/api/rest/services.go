@@ -9,8 +9,10 @@ import (
 	"strconv"
 )
 
+const MaxMultipartParseMemory = 5_000_000
+
 func ParseMultipartForm(r *http.Request) ([]*multipart.FileHeader, int64, error) {
-	err := r.ParseMultipartForm(10_000_000)
+	err := r.ParseMultipartForm(MaxMultipartParseMemory)
 	if err != nil {
 		return nil, 0, err
 	}
